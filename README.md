@@ -13,6 +13,11 @@ The result is an interactive system that automatically routes questions through 
 </p>
 
 ---
+## Live Demo
+
+🔗 [Open the Delta Business Analyst](https://delta-business-analyst-nisha.streamlit.app/)
+
+Explore Delta Air Lines operational and financial performance through SQL analytics, SEC filing retrieval, and hybrid business reasoning.
 
 ## ✈️ What Can It Do?
 

@@ -52,6 +52,12 @@ RUNTIME_FILES = [
         "path": PROJECT_ROOT / "data" / "processed" / "rag" / "embeddings" / "sec_chunk_embeddings.npy",
         "min_bytes": 1 * 1024 * 1024,
     },
+    {
+        "name": "SQL schema catalog",
+        "url": f"{HF_DATASET_BASE}/schema_catalog.json?download=true",
+        "path": PROJECT_ROOT / "data" / "processed" / "sql_agent" / "schema_catalog.json",
+        "min_bytes": 100,
+    },
 ]
 
 

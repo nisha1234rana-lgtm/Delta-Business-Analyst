@@ -346,26 +346,42 @@ Return JSON:
 # OLLAMA HEALTH
 # =========================================================
 
-def check_ollama():
+def is_ollama_available():
+    """
+    Return True when the configured Ollama server is reachable.
+
+    This keeps local development unchanged while allowing hosted environments
+    such as Streamlit Community Cloud to fail fast instead of waiting for a
+    long HTTP timeout against localhost.
+    """
 
     try:
 
         response = requests.get(
             f"{OLLAMA_BASE_URL}/api/tags",
-            timeout=10,
+            timeout=3,
         )
-
 
         response.raise_for_status()
 
+        return True
 
-    except Exception as exc:
+    except requests.RequestException:
+
+        return False
+
+
+def check_ollama():
+    """
+    Explicit health check retained for CLI/debugging use.
+    """
+
+    if not is_ollama_available():
 
         raise RuntimeError(
             "\nOllama is not reachable.\n"
             f"Expected URL: "
-            f"{OLLAMA_BASE_URL}\n\n"
-            f"Error:\n{exc}"
+            f"{OLLAMA_BASE_URL}\n"
         )
 
 
@@ -1200,6 +1216,48 @@ def answer_sql_question(
     print(
         "NO DETERMINISTIC TEMPLATE"
     )
+
+
+    # On the local machine, Ollama remains available exactly as before.
+    # On Streamlit Cloud (or any environment without Ollama), fail fast with
+    # a clear message instead of attempting localhost calls for several
+    # minutes and surfacing a connection traceback.
+    if not is_ollama_available():
+
+        elapsed_ms = (
+            (
+                time.perf_counter()
+                - pipeline_start
+            )
+            * 1000
+        )
+
+        message = (
+            "This question is outside the validated deterministic SQL "
+            "patterns available in the hosted demo. "
+            "Try one of the preset questions or ask about supported "
+            "operational or financial KPIs. "
+            "The local development version can use the Ollama/Qwen fallback "
+            "for additional flexible NL-to-SQL questions."
+        )
+
+        write_log(
+            question=question,
+            source="llm_fallback_unavailable",
+            pattern="",
+            attempt=0,
+            sql="",
+            success=False,
+            error=message,
+            elapsed_ms=round(
+                elapsed_ms,
+                2,
+            ),
+        )
+
+        raise RuntimeError(
+            message
+        )
 
 
     print(

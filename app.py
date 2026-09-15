@@ -3,24 +3,16 @@ import os
 import time
 import html
 import textwrap
+from pathlib import Path
+
 import pandas as pd
+import requests
 import streamlit as st
-
-# Ensure project root is on Python path
-PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
-try:
-    from src.analytics.business_analyst import run_business_analyst
-    from src.visualization.auto_chart import build_visualization
-except ImportError as err:
-    st.error(f"Fatal Import Error: Could not load backend modules from src: {err}")
-    st.stop()
 
 # -----------------------------------------------------------------------------
 # 1. Page Configuration
 # -----------------------------------------------------------------------------
+# Streamlit requires set_page_config() before any other Streamlit UI command.
 st.set_page_config(
     page_title="Delta Business Analyst | AI Intelligence",
     page_icon="✈️",
@@ -29,7 +21,187 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# 2. Design System & CSS Injections
+# 2. Project Paths & Cloud Runtime Data Bootstrap
+# -----------------------------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parent
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+HF_DATASET_BASE = (
+    "https://huggingface.co/datasets/"
+    "nisha1234rana/delta-business-analyst-data/resolve/main"
+)
+
+RUNTIME_FILES = [
+    {
+        "name": "Delta analytics database",
+        "url": f"{HF_DATASET_BASE}/delta_analytics.duckdb?download=true",
+        "path": PROJECT_ROOT / "data" / "processed" / "database" / "delta_analytics.duckdb",
+        "min_bytes": 900 * 1024 * 1024,
+    },
+    {
+        "name": "SEC filing chunks",
+        "url": f"{HF_DATASET_BASE}/sec_chunks.parquet?download=true",
+        "path": PROJECT_ROOT / "data" / "processed" / "rag" / "sec_chunks.parquet",
+        "min_bytes": 1 * 1024 * 1024,
+    },
+    {
+        "name": "SEC chunk embeddings",
+        "url": f"{HF_DATASET_BASE}/sec_chunk_embeddings.npy?download=true",
+        "path": PROJECT_ROOT / "data" / "processed" / "rag" / "embeddings" / "sec_chunk_embeddings.npy",
+        "min_bytes": 1 * 1024 * 1024,
+    },
+]
+
+
+def _runtime_file_ready(file_spec: dict) -> bool:
+    """Return True only when the local runtime asset exists and looks complete."""
+    target = file_spec["path"]
+    return target.exists() and target.stat().st_size >= file_spec["min_bytes"]
+
+
+def _download_runtime_file(file_spec: dict, progress_placeholder) -> None:
+    """
+    Stream a missing runtime asset from the public Hugging Face dataset.
+
+    Downloads to a temporary .part file first, then atomically replaces the
+    target only after the transfer completes. This prevents interrupted
+    downloads from being mistaken for valid runtime data on the next rerun.
+    """
+    target = file_spec["path"]
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    temp_path = target.with_suffix(target.suffix + ".part")
+
+    if temp_path.exists():
+        temp_path.unlink()
+
+    headers = {
+        "User-Agent": "Delta-Business-Analyst/1.0"
+    }
+
+    with requests.get(
+        file_spec["url"],
+        stream=True,
+        timeout=(30, 600),
+        allow_redirects=True,
+        headers=headers,
+    ) as response:
+        response.raise_for_status()
+
+        total_bytes = int(response.headers.get("content-length", 0))
+        downloaded = 0
+
+        with open(temp_path, "wb") as output_file:
+            for chunk in response.iter_content(chunk_size=8 * 1024 * 1024):
+                if not chunk:
+                    continue
+
+                output_file.write(chunk)
+                downloaded += len(chunk)
+
+                if total_bytes > 0:
+                    progress_placeholder.progress(
+                        min(downloaded / total_bytes, 1.0),
+                        text=(
+                            f"Downloading {file_spec['name']} "
+                            f"({downloaded / 1024 / 1024:,.0f} MB / "
+                            f"{total_bytes / 1024 / 1024:,.0f} MB)"
+                        ),
+                    )
+                else:
+                    progress_placeholder.progress(
+                        0,
+                        text=(
+                            f"Downloading {file_spec['name']} "
+                            f"({downloaded / 1024 / 1024:,.0f} MB)"
+                        ),
+                    )
+
+    if temp_path.stat().st_size < file_spec["min_bytes"]:
+        temp_path.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"{file_spec['name']} download was incomplete. "
+            "Please restart the app and try again."
+        )
+
+    os.replace(temp_path, target)
+
+
+def ensure_runtime_data() -> None:
+    """
+    Ensure the three data artifacts required by SQL and RAG are present.
+
+    Local development:
+        Existing files are used immediately; nothing is downloaded.
+
+    Streamlit Cloud:
+        Missing files are fetched once into the app's runtime filesystem.
+    """
+    missing_files = [
+        file_spec
+        for file_spec in RUNTIME_FILES
+        if not _runtime_file_ready(file_spec)
+    ]
+
+    if not missing_files:
+        return
+
+    with st.status(
+        "Preparing analytics data for the first run...",
+        expanded=True,
+    ) as status:
+        st.write(
+            "The cloud instance is downloading the project's runtime data. "
+            "This only happens when the files are not already available."
+        )
+
+        progress_placeholder = st.progress(0, text="Preparing download...")
+
+        try:
+            for file_spec in missing_files:
+                _download_runtime_file(
+                    file_spec,
+                    progress_placeholder,
+                )
+
+            progress_placeholder.progress(
+                1.0,
+                text="Runtime data ready.",
+            )
+            status.update(
+                label="Analytics data ready",
+                state="complete",
+                expanded=False,
+            )
+
+        except Exception as err:
+            status.update(
+                label="Could not prepare analytics data",
+                state="error",
+                expanded=True,
+            )
+            st.error(
+                "The app could not download its runtime data from Hugging Face. "
+                f"Details: {err}"
+            )
+            st.stop()
+
+
+ensure_runtime_data()
+
+# Import backend modules only after runtime data exists. Some backend modules
+# inspect the DuckDB / RAG assets during import.
+try:
+    from src.analytics.business_analyst import run_business_analyst
+    from src.visualization.auto_chart import build_visualization
+except ImportError as err:
+    st.error(f"Fatal Import Error: Could not load backend modules from src: {err}")
+    st.stop()
+
+# -----------------------------------------------------------------------------
+# 3. Design System & CSS Injections
 # -----------------------------------------------------------------------------
 # Zero-indent string to prevent Streamlit markdown parser from turning CSS into code blocks
 CUSTOM_CSS = """<style>
@@ -363,7 +535,7 @@ button[kind="primary"]:hover {
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 3. Safe Rendering Helper Functions
+# 4. Safe Rendering Helper Functions
 # -----------------------------------------------------------------------------
 def safe_html(text: str) -> str:
     """Escape text strings for safe injection into custom HTML."""
@@ -421,7 +593,7 @@ def render_kpi(label: str, value: str):
     render_html_block(kpi_html)
 
 # -----------------------------------------------------------------------------
-# 4. Sidebar Rendering
+# 5. Sidebar Rendering
 # -----------------------------------------------------------------------------
 with st.sidebar:
     # Delta-branded logo & subtitle
@@ -525,7 +697,7 @@ with st.sidebar:
     """)
 
 # -----------------------------------------------------------------------------
-# 5. Hero Header Section
+# 6. Hero Header Section
 # -----------------------------------------------------------------------------
 render_html_block("""
 <div style="position: relative; background: linear-gradient(135deg, #0B132B 0%, #111C38 65%, #18264D 100%); border: 1px solid rgba(65, 90, 119, 0.35); border-radius: 12px; padding: 2rem 2.25rem; margin-bottom: 1.75rem; overflow: hidden;">
@@ -556,7 +728,7 @@ render_html_block("""
 """)
 
 # -----------------------------------------------------------------------------
-# 6. Session State & Input Handling
+# 7. Session State & Input Handling
 # -----------------------------------------------------------------------------
 # Keep the visible question box in session state so pasted/typed text survives
 # Streamlit reruns caused by Enter, preset clicks, and form submission.
@@ -629,7 +801,7 @@ with st.form(
         )
 
 # -----------------------------------------------------------------------------
-# 7. Execution & Result Orchestration
+# 8. Execution & Result Orchestration
 # -----------------------------------------------------------------------------
 active_question = st.session_state.question_input.strip() if run_submitted else ""
 

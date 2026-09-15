@@ -1,0 +1,44 @@
+BENCHMARK ID: SQL028
+
+QUESTION:
+How many flights were operated by Delta Mainline in 2025?
+
+GENERATED SQL:
+SELECT COUNT(*) AS delta_mainline_flights_2025 FROM fact_flights WHERE year = 2025 AND operator_type = 'Mainline'
+
+EXPECTED RESULT:
+ mainline_flights
+          1026332
+
+ACTUAL RESULT:
+ delta_mainline_flights_2025
+                           0
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 1026332.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT COUNT(*) AS delta_mainline_flights_2025 FROM fact_flights WHERE year = 2025 AND operator_type = 'Mainline'
+
+Model explanation:
+Counts Delta Mainline operated flights in 2025 using operator_type and year filters
+
+Assumptions:
+  - operator_type column contains 'Mainline' for Delta Mainline operations
+  - year column correctly represents the flight year
+  - fact_flights table contains all Delta-marketed flights as per business rules
+
+Business semantic validation: PASS
+SQL safety validation: PASS

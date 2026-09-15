@@ -1,0 +1,130 @@
+BENCHMARK ID: SQL005
+
+QUESTION:
+Which origin airport had the largest decline in on-time arrival performance from 2024 to 2025 among airports with at least 5000 departures in both years?
+
+GENERATED SQL:
+(none)
+
+ERROR:
+Traceback (most recent call last):
+  File "C:\Users\Nisha Rajkumar\Projects\Delta_Business_Analyst\src\evaluation\run_sql_benchmark.py", line 1453, in run_one
+    answer_sql_question(
+  File "C:\Users\Nisha Rajkumar\Projects\Delta_Business_Analyst\src\sql_agent\nl_to_sql.py", line 1362, in answer_sql_question
+    raise RuntimeError(
+RuntimeError: The local model failed to produce semantically and structurally valid SQL after 3 attempts.
+
+
+EXPECTED RESULT:
+Origin  change_pp
+   LGA      -8.71
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+WITH on_time_data AS (
+    SELECT 
+        Origin,
+        EXTRACT(YEAR FROM flight_date) AS year,
+        ROUND(100 * AVG(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END), 2) AS on_time_pct,
+        COUNT(*) AS departure_count
+    FROM fact_flights
+    WHERE EXTRACT(YEAR FROM flight_date) IN (2024, 2025)
+    GROUP BY Origin, year
+),
+filtered_airports AS (
+    SELECT Origin
+    FROM on_time_data
+    WHERE year = 2024 AND departure_count >= 5000
+    INTERSECT
+    SELECT Origin
+    FROM on_time_data
+    WHERE year = 2025 AND departure_count >= 5000
+)
+SELECT 
+    o.Origin,
+    o2.on_time_pct AS on_time_2025,
+    o1.on_time_pct AS on_time_2024,
+    (o2.on_time_pct - o1.on_time_pct) AS decline
+FROM filtered_airports f
+JOIN on_time_data o1 ON f.Origin = o1.Origin AND o1.year = 2024
+JOIN on_time_data o2 ON f.Origin = o2.Origin AND o2.year = 2025
+ORDER BY decline DESC
+LIMIT 1
+
+Model explanation:
+The query calculates the on-time arrival percentage for each origin airport in 2024 and 2025, filtering airports with at least 5000 departures in both years. It then computes the difference between 2025 and 2024 percentages to identify the airport with the largest decline. The result is ordered by the decline in descending order to find the most significant drop.
+
+Business semantic validation: PASS
+
+SQL safety validation: REJECTED
+DuckDB validation failed: Binder Error: column "flight_date" must appear in the GROUP BY clause or must be part of an aggregate function.
+Either add it to the GROUP BY list, or use "ANY_VALUE(flight_date)" if the exact value of "flight_date" is not important.
+
+LINE 4:         EXTRACT(YEAR FROM flight_date) AS year,
+                                  ^
+
+Sending database validation error back to Qwen for correction...
+
+================================================================================
+SQL GENERATION ATTEMPT 2/3
+================================================================================
+
+Model output error:
+HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=300)
+
+================================================================================
+SQL GENERATION ATTEMPT 3/3
+================================================================================
+
+Generated SQL:
+WITH on_time_data AS (
+    SELECT 
+        Origin,
+        EXTRACT(YEAR FROM flight_date) AS year,
+        ROUND(100 * AVG(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END), 2) AS on_time_pct,
+        COUNT(*) AS departure_count
+    FROM fact_flights
+    WHERE EXTRACT(YEAR FROM flight_date) IN (2024, 2025)
+    GROUP BY Origin, year
+),
+filtered_airports AS (
+    SELECT Origin
+    FROM on_time_data
+    WHERE year = 2024 AND departure_count >= 5000
+    INTERSECT
+    SELECT Origin
+    FROM on_time_data
+    WHERE year = 2025 AND departure_count >= 5000
+)
+SELECT 
+    o.Origin,
+    o2.on_time_pct AS on_time_2025,
+    o1.on_time_pct AS on_time_2024,
+    (o2.on_time_pct - o1.on_time_pct) AS decline
+FROM filtered_airports f
+JOIN on_time_data o1 ON f.Origin = o1.Origin AND o1.year = 2024
+JOIN on_time_data o2 ON f.Origin = o2.Origin AND o2.year = 2025
+ORDER BY decline DESC
+LIMIT 1
+
+Model explanation:
+Calculates on-time arrival percentages for origins in 2024 and 2025, filters airports with ≥5000 departures in both years, then identifies the origin with the largest decline in on-time performance.
+
+Assumptions:
+  - The 'flight_date' column contains valid dates for both 2024 and 2025.
+  - The 'is_on_time_arrival' flag accurately reflects on-time status.
+  - The 'Origin' field correctly identifies the departure airport.
+
+Business semantic validation: PASS
+
+SQL safety validation: REJECTED
+DuckDB validation failed: Binder Error: column "flight_date" must appear in the GROUP BY clause or must be part of an aggregate function.
+Either add it to the GROUP BY list, or use "ANY_VALUE(flight_date)" if the exact value of "flight_date" is not important.
+
+LINE 4:         EXTRACT(YEAR FROM flight_date) AS year,
+                                  ^

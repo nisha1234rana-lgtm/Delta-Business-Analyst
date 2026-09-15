@@ -1,0 +1,61 @@
+BENCHMARK ID: SQL014
+
+QUESTION:
+Compare Delta's revenue in Q2 2025 and Q2 2026.
+
+GENERATED SQL:
+SELECT year, quarter, period, ROUND(revenue_m, 2) AS revenue_m FROM financial_quarterly WHERE (year = 2025 AND quarter = 2 AND period = 'Q2') OR (year = 2026 AND quarter = 2 AND period = 'Q2')
+
+EXPECTED RESULT:
+ year  revenue_m
+ 2025    16648.0
+ 2026    19757.0
+
+ACTUAL RESULT:
+Empty DataFrame
+Columns: [year, quarter, period, revenue_m]
+Index: []
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 2025.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 16648.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 2026.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 19757.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT year, quarter, period, ROUND(revenue_m, 2) AS revenue_m FROM financial_quarterly WHERE (year = 2025 AND quarter = 2 AND period = 'Q2') OR (year = 2026 AND quarter = 2 AND period = 'Q2')
+
+Model explanation:
+Retrieves Delta's revenue in Q2 2025 and Q2 2026 from the financial_quarterly table using the revenue_m column (USD millions) with two decimal places.
+
+Assumptions:
+  - The 'period' column correctly identifies quarters as 'Q2'
+  - The financial_quarterly table contains accurate revenue data for the requested periods
+  - No additional filtering is needed beyond year, quarter, and period
+
+Business semantic validation: PASS
+SQL safety validation: PASS

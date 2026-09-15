@@ -1,0 +1,64 @@
+BENCHMARK ID: SQL012
+
+QUESTION:
+Which operating carrier had the lowest cancellation rate in 2025?
+
+GENERATED SQL:
+SELECT Operating_Airline, ROUND(100.0 * SUM(is_cancelled) / COUNT(*) FILTER (WHERE year = 2025), 2) AS cancellation_rate_pct FROM fact_flights GROUP BY Operating_Airline ORDER BY cancellation_rate_pct ASC LIMIT 1
+
+EXPECTED RESULT:
+Operating_Airline  cancellation_rate_pct
+               OO                   0.77
+
+ACTUAL RESULT:
+Operating_Airline  cancellation_rate_pct
+               OO                   7.75
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 0.77)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT operating_airline FROM vw_operator_performance WHERE year = 2025 ORDER BY cancellation_rate_pct ASC LIMIT 1
+
+Model explanation:
+Using vw_operator_performance for pre-aggregated cancellation rates, filtered to 2025, ordered by cancellation rate ascending to find the lowest.
+
+Assumptions:
+  - vw_operator_performance contains accurate cancellation_rate_pct calculations
+  - 2025 data is available in the vw_operator_performance table
+
+Business semantic validation: REJECTED
+Business-semantic validation failed:
+- Cancellation-rate calculations must use is_cancelled.
+
+Sending business-rule failure back to Qwen for correction...
+
+================================================================================
+SQL GENERATION ATTEMPT 2/3
+================================================================================
+
+Generated SQL:
+SELECT Operating_Airline, ROUND(100.0 * SUM(is_cancelled) / COUNT(*) FILTER (WHERE year = 2025), 2) AS cancellation_rate_pct FROM fact_flights GROUP BY Operating_Airline ORDER BY cancellation_rate_pct ASC LIMIT 1
+
+Model explanation:
+Calculates cancellation rate using is_cancelled from fact_flights for 2025, then finds the operating carrier with the lowest rate
+
+Assumptions:
+  - 2025 data is complete in fact_flights
+  - Operating_Airline values are properly categorized
+  - Cancellation rate calculation follows business rules
+
+Business semantic validation: PASS
+SQL safety validation: PASS

@@ -1,0 +1,795 @@
+id,category,difficulty,question,execution_success,answer_correct,status,attempts,latency_seconds,db_execution_ms,tables_used,generated_sql,expected_result,actual_result,failure_type,error
+SQL001,cancellation,easy,What was Delta's cancellation rate in June 2026?,True,True,PASS,1,0.07,69.17,"[""fact_flights""]","SELECT
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_cancelled
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year = 2026
+    AND EXTRACT(MONTH FROM flight_date) = 6","[{""cancellation_rate_pct"": 1.43}]","[{""cancellation_rate_pct"": 1.43}]",,
+SQL002,airport_ranking,medium,Which five origin airports had the worst on-time arrival performance in 2025?,True,True,PASS,1,0.07,68.61,"[""fact_flights""]","SELECT
+    Origin,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_on_time_arrival
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS on_time_pct
+FROM fact_flights
+WHERE
+    year = 2025
+GROUP BY Origin
+HAVING COUNT(*) >= 5000
+ORDER BY on_time_pct ASC
+LIMIT 5","[{""Origin"": ""EWR"", ""on_time_pct"": 67.77}, {""Origin"": ""MIA"", ""on_time_pct"": 71.59}, {""Origin"": ""LGA"", ""on_time_pct"": 72.0}, {""Origin"": ""ORD"", ""on_time_pct"": 72.21}, {""Origin"": ""DCA"", ""on_time_pct"": 74.09}]","[{""Origin"": ""EWR"", ""on_time_pct"": 67.77}, {""Origin"": ""MIA"", ""on_time_pct"": 71.59}, {""Origin"": ""LGA"", ""on_time_pct"": 72.0}, {""Origin"": ""ORD"", ""on_time_pct"": 72.21}, {""Origin"": ""DCA"", ""on_time_pct"": 74.09}]",,
+SQL003,financial,easy,Compare Delta's operating margin in Q2 2025 and Q2 2026.,True,True,PASS,1,0.04,40.12,"[""financial_quarterly""]","SELECT
+    year,
+    quarter,
+
+    ROUND(
+        100.0
+        * operating_income_m
+        / revenue_m,
+        2
+    ) AS operating_margin_pct
+
+FROM financial_quarterly
+
+WHERE
+    year IN (2025, 2026)
+    AND quarter = 2
+
+ORDER BY year","[{""operating_margin_pct"": 12.63}, {""operating_margin_pct"": 9.43}]","[{""year"": 2025, ""quarter"": 2, ""operating_margin_pct"": 12.63}, {""year"": 2026, ""quarter"": 2, ""operating_margin_pct"": 9.43}]",,
+SQL004,operator_ranking,medium,Which operating carrier had the highest cancellation rate in 2025?,True,True,PASS,1,0.05,49.6,"[""fact_flights""]","SELECT
+    Operating_Airline,
+    ROUND(
+        100.0 * AVG(
+            CASE
+                WHEN is_cancelled
+                THEN 1
+                ELSE 0
+            END
+        ),
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year = 2025
+GROUP BY Operating_Airline
+ORDER BY cancellation_rate_pct DESC
+LIMIT 1","[{""Operating_Airline"": ""YX"", ""cancellation_rate_pct"": 2.74}]","[{""Operating_Airline"": ""YX"", ""cancellation_rate_pct"": 2.74}]",,
+SQL005,airport_comparison,hard,Which origin airport had the largest decline in on-time arrival performance from 2024 to 2025 among airports with at least 5000 departures in both years?,True,True,PASS,1,0.08,76.88,"[""fact_flights""]","WITH yearly_airport AS (
+
+    SELECT
+        Origin,
+        year,
+        COUNT(*) AS departures,
+
+        100.0 * AVG(
+            CASE
+                WHEN is_on_time_arrival
+                THEN 1
+                ELSE 0
+            END
+        ) AS on_time_pct
+
+    FROM fact_flights
+
+    WHERE
+        year IN (
+            2024,
+            2025
+        )
+
+    GROUP BY
+        Origin,
+        year
+
+    HAVING
+        COUNT(*) >= 5000
+),
+
+airport_comparison AS (
+
+    SELECT
+        Origin,
+
+        MAX(
+            CASE
+                WHEN year = 2024
+                THEN on_time_pct
+            END
+        ) AS on_time_2024,
+
+        MAX(
+            CASE
+                WHEN year = 2025
+                THEN on_time_pct
+            END
+        ) AS on_time_2025,
+
+        COUNT(
+            DISTINCT year
+        ) AS years_present
+
+    FROM yearly_airport
+
+    GROUP BY Origin
+)
+
+SELECT
+    Origin,
+
+    ROUND(
+        on_time_2024,
+        2
+    ) AS on_time_2024,
+
+    ROUND(
+        on_time_2025,
+        2
+    ) AS on_time_2025,
+
+    ROUND(
+        on_time_2025
+        -
+        on_time_2024,
+        2
+    ) AS change_pp
+
+FROM airport_comparison
+
+WHERE
+    years_present = 2
+
+ORDER BY
+    change_pp ASC
+
+LIMIT 1","[{""Origin"": ""LGA"", ""change_pp"": -8.71}]","[{""Origin"": ""LGA"", ""on_time_2024"": 80.71, ""on_time_2025"": 72.0, ""change_pp"": -8.71}]",,
+SQL006,airport_ranking,medium,Which five origin airports had the best on-time arrival performance in 2025?,True,True,PASS,1,0.06,60.53,"[""fact_flights""]","SELECT
+    Origin,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_on_time_arrival
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS on_time_pct
+FROM fact_flights
+WHERE
+    year = 2025
+GROUP BY Origin
+HAVING COUNT(*) >= 5000
+ORDER BY on_time_pct DESC
+LIMIT 5","[{""Origin"": ""SJC"", ""on_time_pct"": 90.89}, {""Origin"": ""SMF"", ""on_time_pct"": 89.73}, {""Origin"": ""GEG"", ""on_time_pct"": 89.23}, {""Origin"": ""PDX"", ""on_time_pct"": 88.45}, {""Origin"": ""BOI"", ""on_time_pct"": 88.03}]","[{""Origin"": ""SJC"", ""on_time_pct"": 90.89}, {""Origin"": ""SMF"", ""on_time_pct"": 89.73}, {""Origin"": ""GEG"", ""on_time_pct"": 89.23}, {""Origin"": ""PDX"", ""on_time_pct"": 88.45}, {""Origin"": ""BOI"", ""on_time_pct"": 88.03}]",,
+SQL007,cancellation_comparison,medium,Compare Delta's cancellation rate in 2024 and 2025.,True,True,PASS,1,0.04,41.84,"[""fact_flights""]","SELECT
+    year,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_cancelled
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year IN (2024, 2025)
+
+GROUP BY year
+ORDER BY year","[{""year"": 2024, ""cancellation_rate_pct"": 1.09}, {""year"": 2025, ""cancellation_rate_pct"": 1.36}]","[{""year"": 2024, ""cancellation_rate_pct"": 1.09}, {""year"": 2025, ""cancellation_rate_pct"": 1.36}]",,
+SQL008,on_time_comparison,medium,Compare Delta's overall on-time arrival rate in 2024 and 2025.,True,True,PASS,1,0.04,42.93,"[""fact_flights""]","SELECT
+    year,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_on_time_arrival
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS on_time_pct
+FROM fact_flights
+WHERE
+    year IN (2024, 2025)
+
+GROUP BY year
+ORDER BY year","[{""year"": 2024, ""on_time_pct"": 82.02}, {""year"": 2025, ""on_time_pct"": 79.26}]","[{""year"": 2024, ""on_time_pct"": 82.02}, {""year"": 2025, ""on_time_pct"": 79.26}]",,
+SQL009,operator_comparison,medium,Compare cancellation rates for Delta Mainline and Partner flights in 2025.,True,True,PASS,1,0.04,42.44,"[""fact_flights""]","SELECT
+    operator_type,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_cancelled
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year = 2025
+    AND operator_type IN (
+        'Delta Mainline',
+        'Partner'
+    )
+GROUP BY operator_type
+ORDER BY operator_type","[{""operator_type"": ""Delta Mainline"", ""cancellation_rate_pct"": 1.08}, {""operator_type"": ""Partner"", ""cancellation_rate_pct"": 1.85}]","[{""operator_type"": ""Delta Mainline"", ""cancellation_rate_pct"": 1.08}, {""operator_type"": ""Partner"", ""cancellation_rate_pct"": 1.85}]",,
+SQL010,h1_comparison,medium,Compare Delta's cancellation rate in the first half of 2025 with the first half of 2026.,True,True,PASS,1,0.04,42.8,"[""fact_flights""]","SELECT
+    year,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_cancelled
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year IN (2025, 2026)
+
+    AND EXTRACT(
+        MONTH FROM flight_date
+    ) <= 6
+
+GROUP BY year
+ORDER BY year","[{""year"": 2025, ""cancellation_rate_pct"": 1.22}, {""year"": 2026, ""cancellation_rate_pct"": 2.35}]","[{""year"": 2025, ""cancellation_rate_pct"": 1.22}, {""year"": 2026, ""cancellation_rate_pct"": 2.35}]",,
+SQL011,airport_comparison,hard,Which origin airport improved the most in on-time arrival performance from 2024 to 2025 among airports with at least 5000 departures in both years?,True,True,PASS,1,0.07,70.39,"[""fact_flights""]","WITH yearly_airport AS (
+
+    SELECT
+        Origin,
+        year,
+        COUNT(*) AS departures,
+
+        100.0 * AVG(
+            CASE
+                WHEN is_on_time_arrival
+                THEN 1
+                ELSE 0
+            END
+        ) AS on_time_pct
+
+    FROM fact_flights
+
+    WHERE
+        year IN (
+            2024,
+            2025
+        )
+
+    GROUP BY
+        Origin,
+        year
+
+    HAVING
+        COUNT(*) >= 5000
+),
+
+airport_comparison AS (
+
+    SELECT
+        Origin,
+
+        MAX(
+            CASE
+                WHEN year = 2024
+                THEN on_time_pct
+            END
+        ) AS on_time_2024,
+
+        MAX(
+            CASE
+                WHEN year = 2025
+                THEN on_time_pct
+            END
+        ) AS on_time_2025,
+
+        COUNT(
+            DISTINCT year
+        ) AS years_present
+
+    FROM yearly_airport
+
+    GROUP BY Origin
+)
+
+SELECT
+    Origin,
+
+    ROUND(
+        on_time_2024,
+        2
+    ) AS on_time_2024,
+
+    ROUND(
+        on_time_2025,
+        2
+    ) AS on_time_2025,
+
+    ROUND(
+        on_time_2025
+        -
+        on_time_2024,
+        2
+    ) AS change_pp
+
+FROM airport_comparison
+
+WHERE
+    years_present = 2
+
+ORDER BY
+    change_pp DESC
+
+LIMIT 1","[{""Origin"": ""BOI"", ""change_pp"": 3.55}]","[{""Origin"": ""BOI"", ""on_time_2024"": 84.48, ""on_time_2025"": 88.03, ""change_pp"": 3.55}]",,
+SQL012,operator_ranking,medium,Which operating carrier had the lowest cancellation rate in 2025?,True,True,PASS,1,0.04,40.17,"[""fact_flights""]","SELECT
+    Operating_Airline,
+    ROUND(
+        100.0 * AVG(
+            CASE
+                WHEN is_cancelled
+                THEN 1
+                ELSE 0
+            END
+        ),
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year = 2025
+GROUP BY Operating_Airline
+ORDER BY cancellation_rate_pct ASC
+LIMIT 1","[{""Operating_Airline"": ""OO"", ""cancellation_rate_pct"": 0.77}]","[{""Operating_Airline"": ""OO"", ""cancellation_rate_pct"": 0.77}]",,
+SQL013,flight_volume,easy,How many Delta-marketed flights were scheduled in 2025 and how many were cancelled?,True,True,PASS,1,76.93,133.08,"[""fact_flights""]","SELECT COUNT(*) AS total_flights, SUM(is_cancelled) AS cancelled_flights FROM fact_flights WHERE year = 2025;","[{""scheduled_flights"": 1626898, ""cancelled_flights"": 22207.0}]","[{""total_flights"": 1626898, ""cancelled_flights"": 22207.0}]",,
+SQL014,financial,easy,Compare Delta's revenue in Q2 2025 and Q2 2026.,True,True,PASS,1,0.05,50.49,"[""financial_quarterly""]","SELECT
+    year,
+    quarter,
+    revenue_m
+FROM financial_quarterly
+WHERE
+    year IN (2025, 2026)
+    AND quarter = 2
+ORDER BY year","[{""year"": 2025, ""revenue_m"": 16648.0}, {""year"": 2026, ""revenue_m"": 19757.0}]","[{""year"": 2025, ""quarter"": 2, ""revenue_m"": 16648.0}, {""year"": 2026, ""quarter"": 2, ""revenue_m"": 19757.0}]",,
+SQL015,financial,easy,Compare Delta's operating income in Q2 2025 and Q2 2026.,True,True,PASS,1,0.04,41.8,"[""financial_quarterly""]","SELECT
+    year,
+    quarter,
+    operating_income_m
+FROM financial_quarterly
+WHERE
+    year IN (2025, 2026)
+    AND quarter = 2
+ORDER BY year","[{""year"": 2025, ""operating_income_m"": 2102.0}, {""year"": 2026, ""operating_income_m"": 1864.0}]","[{""year"": 2025, ""quarter"": 2, ""operating_income_m"": 2102.0}, {""year"": 2026, ""quarter"": 2, ""operating_income_m"": 1864.0}]",,
+SQL016,on_time,easy,What was Delta's overall on-time arrival rate in 2025?,True,True,PASS,1,0.05,52.91,"[""fact_flights""]","SELECT
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_on_time_arrival
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS on_time_pct
+FROM fact_flights
+WHERE
+    year = 2025","[{""on_time_pct"": 79.26}]","[{""on_time_pct"": 79.26}]",,
+SQL017,airport_ranking,medium,Which five origin airports had the highest cancellation rates in 2025 among airports with at least 5000 departures?,True,True,PASS,1,0.06,59.6,"[""fact_flights""]","SELECT
+    Origin,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_cancelled
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year = 2025
+GROUP BY Origin
+HAVING COUNT(*) >= 5000
+ORDER BY cancellation_rate_pct DESC
+LIMIT 5","[{""Origin"": ""LGA"", ""cancellation_rate_pct"": 3.16}, {""Origin"": ""BUF"", ""cancellation_rate_pct"": 2.98}, {""Origin"": ""EWR"", ""cancellation_rate_pct"": 2.96}, {""Origin"": ""DCA"", ""cancellation_rate_pct"": 2.95}, {""Origin"": ""JFK"", ""cancellation_rate_pct"": 2.59}]","[{""Origin"": ""LGA"", ""cancellation_rate_pct"": 3.16}, {""Origin"": ""BUF"", ""cancellation_rate_pct"": 2.98}, {""Origin"": ""EWR"", ""cancellation_rate_pct"": 2.96}, {""Origin"": ""DCA"", ""cancellation_rate_pct"": 2.95}, {""Origin"": ""JFK"", ""cancellation_rate_pct"": 2.59}]",,
+SQL018,airport_ranking,medium,Which five origin airports had the lowest cancellation rates in 2025 among airports with at least 5000 departures?,True,True,PASS,1,0.06,61.38,"[""fact_flights""]","SELECT
+    Origin,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_cancelled
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year = 2025
+GROUP BY Origin
+HAVING COUNT(*) >= 5000
+ORDER BY cancellation_rate_pct ASC
+LIMIT 5","[{""Origin"": ""GEG"", ""cancellation_rate_pct"": 0.31}, {""Origin"": ""SLC"", ""cancellation_rate_pct"": 0.37}, {""Origin"": ""SMF"", ""cancellation_rate_pct"": 0.38}, {""Origin"": ""SJC"", ""cancellation_rate_pct"": 0.39}, {""Origin"": ""PDX"", ""cancellation_rate_pct"": 0.43}]","[{""Origin"": ""GEG"", ""cancellation_rate_pct"": 0.31}, {""Origin"": ""SLC"", ""cancellation_rate_pct"": 0.37}, {""Origin"": ""SMF"", ""cancellation_rate_pct"": 0.38}, {""Origin"": ""SJC"", ""cancellation_rate_pct"": 0.39}, {""Origin"": ""PDX"", ""cancellation_rate_pct"": 0.43}]",,
+SQL019,operator_comparison,medium,Compare on-time arrival performance for Delta Mainline and Partner flights in 2025.,True,True,PASS,1,0.06,57.07,"[""fact_flights""]","SELECT
+    operator_type,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_on_time_arrival
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS on_time_pct
+FROM fact_flights
+WHERE
+    year = 2025
+    AND operator_type IN (
+        'Delta Mainline',
+        'Partner'
+    )
+GROUP BY operator_type
+ORDER BY operator_type","[{""operator_type"": ""Delta Mainline"", ""on_time_pct"": 79.12}, {""operator_type"": ""Partner"", ""on_time_pct"": 79.51}]","[{""operator_type"": ""Delta Mainline"", ""on_time_pct"": 79.12}, {""operator_type"": ""Partner"", ""on_time_pct"": 79.51}]",,
+SQL020,year_ranking,medium,"Between 2020 and 2025, which year had Delta's highest cancellation rate?",True,True,PASS,1,0.06,54.39,"[""fact_flights""]","SELECT
+    year,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_cancelled
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS cancellation_rate_pct
+FROM fact_flights
+WHERE
+    year IN (2020, 2025)
+
+GROUP BY year
+ORDER BY year","[{""year"": 2020, ""cancellation_rate_pct"": 4.24}]","[{""year"": 2020, ""cancellation_rate_pct"": 4.24}, {""year"": 2025, ""cancellation_rate_pct"": 1.36}]",,
+SQL021,financial,medium,How much did Delta's operating margin change from Q2 2025 to Q2 2026?,True,True,PASS,1,0.04,42.34,"[""financial_quarterly""]","WITH margins AS (
+
+    SELECT
+        year,
+
+        100.0
+        * operating_income_m
+        / revenue_m
+        AS margin_pct
+
+    FROM financial_quarterly
+
+    WHERE
+        quarter = 2
+        AND year IN (
+            2025,
+            2026
+        )
+)
+
+SELECT
+    ROUND(
+
+        MAX(
+            CASE
+                WHEN year = 2026
+                THEN margin_pct
+            END
+        )
+
+        -
+
+        MAX(
+            CASE
+                WHEN year = 2025
+                THEN margin_pct
+            END
+        ),
+
+        2
+
+    ) AS margin_change_pp
+
+FROM margins","[{""margin_change_pp"": -3.19}]","[{""margin_change_pp"": -3.19}]",,
+SQL022,financial,medium,How much did Delta's revenue change from Q2 2025 to Q2 2026?,True,True,PASS,1,0.04,41.13,"[""financial_quarterly""]","SELECT
+    MAX(
+        CASE
+            WHEN year = 2026
+            THEN revenue_m
+        END
+    )
+    -
+    MAX(
+        CASE
+            WHEN year = 2025
+            THEN revenue_m
+        END
+    ) AS revenue_change_m
+
+FROM financial_quarterly
+
+WHERE
+    quarter = 2
+    AND year IN (
+        2025,
+        2026
+    )","[{""revenue_change_m"": 3109.0}]","[{""revenue_change_m"": 3109.0}]",,
+SQL023,airport_comparison,hard,"Show the five origin airports with the largest deterioration in on-time arrival performance from 2024 to 2025, requiring at least 5000 departures in each year.",True,True,PASS,1,0.08,73.41,"[""fact_flights""]","WITH yearly_airport AS (
+
+    SELECT
+        Origin,
+        year,
+        COUNT(*) AS departures,
+
+        100.0 * AVG(
+            CASE
+                WHEN is_on_time_arrival
+                THEN 1
+                ELSE 0
+            END
+        ) AS on_time_pct
+
+    FROM fact_flights
+
+    WHERE
+        year IN (
+            2024,
+            2025
+        )
+
+    GROUP BY
+        Origin,
+        year
+
+    HAVING
+        COUNT(*) >= 5000
+),
+
+airport_comparison AS (
+
+    SELECT
+        Origin,
+
+        MAX(
+            CASE
+                WHEN year = 2024
+                THEN on_time_pct
+            END
+        ) AS on_time_2024,
+
+        MAX(
+            CASE
+                WHEN year = 2025
+                THEN on_time_pct
+            END
+        ) AS on_time_2025,
+
+        COUNT(
+            DISTINCT year
+        ) AS years_present
+
+    FROM yearly_airport
+
+    GROUP BY Origin
+)
+
+SELECT
+    Origin,
+
+    ROUND(
+        on_time_2024,
+        2
+    ) AS on_time_2024,
+
+    ROUND(
+        on_time_2025,
+        2
+    ) AS on_time_2025,
+
+    ROUND(
+        on_time_2025
+        -
+        on_time_2024,
+        2
+    ) AS change_pp
+
+FROM airport_comparison
+
+WHERE
+    years_present = 2
+
+ORDER BY
+    change_pp ASC
+
+LIMIT 5","[{""Origin"": ""LGA"", ""change_pp"": -8.71}, {""Origin"": ""DCA"", ""change_pp"": -8.24}, {""Origin"": ""EWR"", ""change_pp"": -7.2}, {""Origin"": ""ORD"", ""change_pp"": -6.6}, {""Origin"": ""BOS"", ""change_pp"": -6.58}]","[{""Origin"": ""LGA"", ""on_time_2024"": 80.71, ""on_time_2025"": 72.0, ""change_pp"": -8.71}, {""Origin"": ""DCA"", ""on_time_2024"": 82.33, ""on_time_2025"": 74.09, ""change_pp"": -8.24}, {""Origin"": ""EWR"", ""on_time_2024"": 74.97, ""on_time_2025"": 67.77, ""change_pp"": -7.2}, {""Origin"": ""ORD"", ""on_time_2024"": 78.81, ""on_time_2025"": 72.21, ""change_pp"": -6.6}, {""Origin"": ""BOS"", ""on_time_2024"": 81.55, ""on_time_2025"": 74.98, ""change_pp"": -6.58}]",,
+SQL024,airport_comparison,hard,"Show the five origin airports with the largest improvement in on-time arrival performance from 2024 to 2025, requiring at least 5000 departures in each year.",True,True,PASS,1,0.07,70.97,"[""fact_flights""]","WITH yearly_airport AS (
+
+    SELECT
+        Origin,
+        year,
+        COUNT(*) AS departures,
+
+        100.0 * AVG(
+            CASE
+                WHEN is_on_time_arrival
+                THEN 1
+                ELSE 0
+            END
+        ) AS on_time_pct
+
+    FROM fact_flights
+
+    WHERE
+        year IN (
+            2024,
+            2025
+        )
+
+    GROUP BY
+        Origin,
+        year
+
+    HAVING
+        COUNT(*) >= 5000
+),
+
+airport_comparison AS (
+
+    SELECT
+        Origin,
+
+        MAX(
+            CASE
+                WHEN year = 2024
+                THEN on_time_pct
+            END
+        ) AS on_time_2024,
+
+        MAX(
+            CASE
+                WHEN year = 2025
+                THEN on_time_pct
+            END
+        ) AS on_time_2025,
+
+        COUNT(
+            DISTINCT year
+        ) AS years_present
+
+    FROM yearly_airport
+
+    GROUP BY Origin
+)
+
+SELECT
+    Origin,
+
+    ROUND(
+        on_time_2024,
+        2
+    ) AS on_time_2024,
+
+    ROUND(
+        on_time_2025,
+        2
+    ) AS on_time_2025,
+
+    ROUND(
+        on_time_2025
+        -
+        on_time_2024,
+        2
+    ) AS change_pp
+
+FROM airport_comparison
+
+WHERE
+    years_present = 2
+
+ORDER BY
+    change_pp DESC
+
+LIMIT 5","[{""Origin"": ""BOI"", ""change_pp"": 3.55}, {""Origin"": ""GEG"", ""change_pp"": 2.73}, {""Origin"": ""SLC"", ""change_pp"": 2.14}, {""Origin"": ""SMF"", ""change_pp"": 2.13}, {""Origin"": ""SAN"", ""change_pp"": 1.49}]","[{""Origin"": ""BOI"", ""on_time_2024"": 84.48, ""on_time_2025"": 88.03, ""change_pp"": 3.55}, {""Origin"": ""GEG"", ""on_time_2024"": 86.5, ""on_time_2025"": 89.23, ""change_pp"": 2.73}, {""Origin"": ""SLC"", ""on_time_2024"": 83.61, ""on_time_2025"": 85.75, ""change_pp"": 2.14}, {""Origin"": ""SMF"", ""on_time_2024"": 87.6, ""on_time_2025"": 89.73, ""change_pp"": 2.13}, {""Origin"": ""SAN"", ""on_time_2024"": 82.28, ""on_time_2025"": 83.77, ""change_pp"": 1.49}]",,
+SQL025,h1_comparison,medium,Did Delta's on-time arrival performance improve in the first half of 2026 compared with the first half of 2025?,True,True,PASS,1,0.05,52.41,"[""fact_flights""]","SELECT
+    year,
+    ROUND(
+        
+            100.0 * AVG(
+                CASE
+                    WHEN is_on_time_arrival
+                    THEN 1
+                    ELSE 0
+                END
+            )
+        ,
+        2
+    ) AS on_time_pct
+FROM fact_flights
+WHERE
+    year IN (2026, 2025)
+
+    AND EXTRACT(
+        MONTH FROM flight_date
+    ) <= 6
+
+GROUP BY year
+ORDER BY year","[{""year"": 2025, ""on_time_pct"": 78.7}, {""year"": 2026, ""on_time_pct"": 79.33}]","[{""year"": 2025, ""on_time_pct"": 78.7}, {""year"": 2026, ""on_time_pct"": 79.33}]",,
+SQL026,cancellation,easy,What percentage of Delta-marketed flights were cancelled in 2025?,True,True,PASS,1,31.78,49.06,"[""fact_flights""]",SELECT 100.0 * AVG(CASE WHEN is_cancelled THEN 1 ELSE 0 END) AS cancellation_rate_pct FROM fact_flights WHERE EXTRACT(YEAR FROM flight_date) = 2025;,"[{""cancellation_rate_pct"": 1.36}]","[{""cancellation_rate_pct"": 1.3649903067063822}]",,
+SQL027,operator,easy,How many flights were operated by partner airlines in 2025?,True,True,PASS,1,0.04,41.31,"[""fact_flights""]","SELECT
+    COUNT(*) AS partner_flights
+FROM fact_flights
+WHERE
+    year = 2025
+    AND operator_type = 'Partner'","[{""partner_flights"": 600566}]","[{""partner_flights"": 600566}]",,
+SQL028,operator,easy,How many flights were operated by Delta Mainline in 2025?,True,True,PASS,1,0.05,44.86,"[""fact_flights""]","SELECT
+    COUNT(*) AS mainline_flights
+FROM fact_flights
+WHERE
+    year = 2025
+    AND operator_type = 'Delta Mainline'","[{""mainline_flights"": 1026332}]","[{""mainline_flights"": 1026332}]",,
+SQL029,financial,medium,What was Delta's net income in Q2 2026?,True,True,PASS,1,0.04,34.47,"[""financial_quarterly""]","SELECT
+    year,
+    quarter,
+    net_income_m
+FROM financial_quarterly
+WHERE
+    year IN (2026)
+    AND quarter = 2
+ORDER BY year","[{""net_income_m"": 1604.0}]","[{""year"": 2026, ""quarter"": 2, ""net_income_m"": 1604.0}]",,
+SQL030,financial,medium,What was Delta's total debt in Q2 2026?,True,True,PASS,1,0.04,33.78,"[""financial_quarterly""]","SELECT
+    year,
+    quarter,
+    total_debt_m
+FROM financial_quarterly
+WHERE
+    year IN (2026)
+    AND quarter = 2
+ORDER BY year","[{""total_debt_m"": 12905.0}]","[{""year"": 2026, ""quarter"": 2, ""total_debt_m"": 12905.0}]",,

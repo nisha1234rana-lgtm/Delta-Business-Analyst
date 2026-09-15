@@ -1,0 +1,7 @@
+metric,passed,total,percent
+Overall,18,18,100.0
+Routing,18,18,100.0
+SQL execution,13,13,100.0
+RAG retrieval,12,12,100.0
+RAG period,8,8,100.0
+Final answer present,18,18,100.0

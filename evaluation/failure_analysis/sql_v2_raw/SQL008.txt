@@ -1,0 +1,62 @@
+BENCHMARK ID: SQL008
+
+QUESTION:
+Compare Delta's overall on-time arrival rate in 2024 and 2025.
+
+GENERATED SQL:
+SELECT 
+    (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2025) AS '2025 On-Time Arrival Rate',
+    (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2024) AS '2024 On-Time Arrival Rate',
+    (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2025) - (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2024) AS 'Change'
+FROM fact_flights
+WHERE year IN (2024, 2025)
+LIMIT 1;
+
+EXPECTED RESULT:
+ year  on_time_pct
+ 2024        82.02
+ 2025        79.26
+
+ACTUAL RESULT:
+ 2025 On-Time Arrival Rate  2024 On-Time Arrival Rate    Change
+                 79.263851                  82.023459 -2.759608
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 2024.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 2025.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT 
+    (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2025) AS '2025 On-Time Arrival Rate',
+    (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2024) AS '2024 On-Time Arrival Rate',
+    (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2025) - (SELECT 100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*) FROM fact_flights WHERE year = 2024) AS 'Change'
+FROM fact_flights
+WHERE year IN (2024, 2025)
+LIMIT 1
+
+Model explanation:
+This query calculates the on-time arrival rate for 2024 and 2025 by counting the number of flights that arrived on time (is_on_time_arrival = TRUE) and dividing by the total number of flights for each year. The change is computed as the difference between the 2025 rate and the 2024 rate. The LIMIT 1 ensures only one row is returned since the subqueries are independent of the main table's data.
+
+Assumptions:
+  - The fact_flights table contains the is_on_time_arrival flag and the year column for the years 2024 and 2025.
+  - The year column in fact_flights is correctly populated for the years in question.
+  - The data includes all scheduled flights, including those that were cancelled (as per Rule 12).
+
+Business semantic validation: PASS
+SQL safety validation: PASS

@@ -1,0 +1,51 @@
+BENCHMARK ID: SQL019
+
+QUESTION:
+Compare on-time arrival performance for Delta Mainline and Partner flights in 2025.
+
+GENERATED SQL:
+SELECT operator_type, ROUND(100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*), 2) AS on_time_arrival_pct FROM fact_flights WHERE year = 2025 AND is_cancelled = FALSE AND operator_type IN ('Delta Mainline', 'Partner') GROUP BY operator_type;
+
+EXPECTED RESULT:
+ operator_type  on_time_pct
+Delta Mainline        79.12
+       Partner        79.51
+
+ACTUAL RESULT:
+ operator_type  on_time_arrival_pct
+       Partner                81.01
+Delta Mainline                79.99
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 79.12)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 79.51)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT operator_type, ROUND(100.0 * SUM(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) / COUNT(*), 2) AS on_time_arrival_pct FROM fact_flights WHERE year = 2025 AND is_cancelled = FALSE AND operator_type IN ('Delta Mainline', 'Partner') GROUP BY operator_type
+
+Model explanation:
+Calculates on-time arrival percentages for Delta Mainline and Partner flights in 2025 by filtering non-cancelled flights, grouping by operator type, and computing the ratio of on-time arrivals.
+
+Assumptions:
+  - operator_type contains 'Delta Mainline' and 'Partner' values
+  - is_on_time_arrival accurately reflects on-time arrival status
+  - year column correctly represents flight year
+
+Business semantic validation: PASS
+SQL safety validation: PASS

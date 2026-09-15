@@ -1,0 +1,31 @@
+{
+  "total_questions": 30,
+  "execution_successes": 30,
+  "execution_success_rate_pct": 100.0,
+  "correct_answers": 30,
+  "answer_accuracy_pct": 100.0,
+  "average_attempts": 1.0,
+  "average_latency_seconds": 3.67,
+  "difficulty_accuracy_pct": {
+    "easy": 100.0,
+    "medium": 100.0,
+    "hard": 100.0
+  },
+  "category_accuracy_pct": {
+    "airport_comparison": 100.0,
+    "airport_ranking": 100.0,
+    "cancellation": 100.0,
+    "cancellation_comparison": 100.0,
+    "financial": 100.0,
+    "flight_volume": 100.0,
+    "h1_comparison": 100.0,
+    "on_time": 100.0,
+    "on_time_comparison": 100.0,
+    "operator": 100.0,
+    "operator_comparison": 100.0,
+    "operator_ranking": 100.0,
+    "year_ranking": 100.0
+  },
+  "failure_counts": {},
+  "total_benchmark_runtime_seconds": 111.39
+}

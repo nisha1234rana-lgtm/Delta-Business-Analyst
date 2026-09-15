@@ -1,0 +1,69 @@
+BENCHMARK ID: SQL025
+
+QUESTION:
+Did Delta's on-time arrival performance improve in the first half of 2026 compared with the first half of 2025?
+
+GENERATED SQL:
+SELECT 
+    ROUND(
+        (SUM(CASE WHEN flight_date BETWEEN '2025-01-01' AND '2025-06-30' THEN 
+            CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END 
+        END) * 100.0 / COUNT(CASE WHEN flight_date BETWEEN '2025-01-01' AND '2025-06-30' THEN 1 END)), 2
+    ) AS on_time_pct_2025_h1,
+    ROUND(
+        (SUM(CASE WHEN flight_date BETWEEN '2026-01-01' AND '2026-06-30' THEN 
+            CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END 
+        END) * 100.0 / COUNT(CASE WHEN flight_date BETWEEN '2026-01-01' AND '2026-06-30' THEN 1 END)), 2
+    ) AS on_time_pct_2026_h1
+FROM fact_flights
+WHERE flight_date BETWEEN '2025-01-01' AND '2026-06-30';
+
+EXPECTED RESULT:
+ year  on_time_pct
+ 2025        78.70
+ 2026        79.33
+
+ACTUAL RESULT:
+ on_time_pct_2025_h1  on_time_pct_2026_h1
+                78.7                79.33
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 2025.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 2026.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT 
+    ROUND(
+        (SUM(CASE WHEN flight_date BETWEEN '2025-01-01' AND '2025-06-30' THEN 
+            CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END 
+        END) * 100.0 / COUNT(CASE WHEN flight_date BETWEEN '2025-01-01' AND '2025-06-30' THEN 1 END)), 2
+    ) AS on_time_pct_2025_h1,
+    ROUND(
+        (SUM(CASE WHEN flight_date BETWEEN '2026-01-01' AND '2026-06-30' THEN 
+            CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END 
+        END) * 100.0 / COUNT(CASE WHEN flight_date BETWEEN '2026-01-01' AND '2026-06-30' THEN 1 END)), 2
+    ) AS on_time_pct_2026_h1
+FROM fact_flights
+WHERE flight_date BETWEEN '2025-01-01' AND '2026-06-30'
+
+Model explanation:
+This query calculates the on-time arrival percentage for the first half of 2025 and 2026 by filtering the `fact_flights` table for each period. It uses conditional aggregation to sum the number of on-time flights and divide by the total number of flights in each period. The result is rounded to two decimal places for clarity. The query returns a single row with both percentages, allowing for direct comparison between the two periods.
+
+Business semantic validation: PASS
+SQL safety validation: PASS

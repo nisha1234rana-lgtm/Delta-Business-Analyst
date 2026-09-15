@@ -1,0 +1,72 @@
+BENCHMARK ID: SQL023
+
+QUESTION:
+Show the five origin airports with the largest deterioration in on-time arrival performance from 2024 to 2025, requiring at least 5000 departures in each year.
+
+GENERATED SQL:
+WITH cte_2024 AS (SELECT Origin, 100 * AVG(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) AS on_time_2024 FROM fact_flights WHERE EXTRACT(YEAR FROM flight_date) = 2024 GROUP BY Origin HAVING COUNT(*) >= 5000), cte_2025 AS (SELECT Origin, 100 * AVG(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) AS on_time_2025 FROM fact_flights WHERE EXTRACT(YEAR FROM flight_date) = 2025 GROUP BY Origin HAVING COUNT(*) >= 5000) SELECT c2024.Origin, ROUND(c2024.on_time_2024 - c2025.on_time_2025, 2) AS deterioration FROM cte_2024 c2024 JOIN cte_2025 c2025 ON c2024.Origin = c2025.Origin ORDER BY deterioration DESC LIMIT 5;
+
+EXPECTED RESULT:
+Origin  change_pp
+   LGA      -8.71
+   DCA      -8.24
+   EWR      -7.20
+   ORD      -6.60
+   BOS      -6.58
+
+ACTUAL RESULT:
+Origin  deterioration
+   LGA           8.71
+   DCA           8.24
+   EWR           7.20
+   ORD           6.60
+   BOS           6.58
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', -8.71)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', -8.24)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', -7.2)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', -6.6)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', -6.58)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+WITH cte_2024 AS (SELECT Origin, 100 * AVG(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) AS on_time_2024 FROM fact_flights WHERE EXTRACT(YEAR FROM flight_date) = 2024 GROUP BY Origin HAVING COUNT(*) >= 5000), cte_2025 AS (SELECT Origin, 100 * AVG(CASE WHEN is_on_time_arrival THEN 1 ELSE 0 END) AS on_time_2025 FROM fact_flights WHERE EXTRACT(YEAR FROM flight_date) = 2025 GROUP BY Origin HAVING COUNT(*) >= 5000) SELECT c2024.Origin, ROUND(c2024.on_time_2024 - c2025.on_time_2025, 2) AS deterioration FROM cte_2024 c2024 JOIN cte_2025 c2025 ON c2024.Origin = c2025.Origin ORDER BY deterioration DESC LIMIT 5
+
+Model explanation:
+Calculates on-time arrival percentages for origins in 2024 and 2025, identifies deterioration as the difference, and ranks top 5 airports with largest decline.
+
+Assumptions:
+  - flight_date contains complete year data for 2024 and 2025
+  - is_on_time_arrival accurately reflects on-time arrivals
+  - Origin airports have valid entries in fact_flights
+
+Business semantic validation: PASS
+SQL safety validation: PASS

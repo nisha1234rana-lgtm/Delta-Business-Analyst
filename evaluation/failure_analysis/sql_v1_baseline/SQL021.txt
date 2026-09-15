@@ -1,0 +1,44 @@
+BENCHMARK ID: SQL021
+
+QUESTION:
+How much did Delta's operating margin change from Q2 2025 to Q2 2026?
+
+GENERATED SQL:
+SELECT ROUND((q2.operating_margin_pct - q1.operating_margin_pct), 2) AS margin_change FROM vw_financial_performance q1 JOIN vw_financial_performance q2 ON q1.year = 2025 AND q1.quarter = 2 AND q2.year = 2026 AND q2.quarter = 2
+
+EXPECTED RESULT:
+ margin_change_pp
+            -3.19
+
+ACTUAL RESULT:
+ margin_change
+          -3.2
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', -3.19)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT ROUND((q2.operating_margin_pct - q1.operating_margin_pct), 2) AS margin_change FROM vw_financial_performance q1 JOIN vw_financial_performance q2 ON q1.year = 2025 AND q1.quarter = 2 AND q2.year = 2026 AND q2.quarter = 2
+
+Model explanation:
+Calculates the change in operating margin percentage between Q2 2025 and Q2 2026 using pre-calculated quarterly metrics from vw_financial_performance
+
+Assumptions:
+  - vw_financial_performance contains accurate operating margin percentages
+  - Q2 2025 and Q2 2026 data exists in vw_financial_performance
+  - Operating margin is defined as (Operating Income / Revenue) * 100
+
+Business semantic validation: PASS
+SQL safety validation: PASS

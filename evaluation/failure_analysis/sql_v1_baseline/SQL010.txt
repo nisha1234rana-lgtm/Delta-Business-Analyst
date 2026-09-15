@@ -1,0 +1,61 @@
+BENCHMARK ID: SQL010
+
+QUESTION:
+Compare Delta's cancellation rate in the first half of 2025 with the first half of 2026.
+
+GENERATED SQL:
+SELECT '2025 H1' AS period, 100.0 * SUM(CASE WHEN is_cancelled THEN 1 ELSE 0 END) / COUNT(*) AS cancellation_rate FROM fact_flights WHERE Marketing_Airline_Network = 'Delta' AND flight_date BETWEEN '2025-01-01' AND '2025-06-30' UNION ALL SELECT '2026 H1' AS period, 100.0 * SUM(CASE WHEN is_cancelled THEN 1 ELSE 0 END) / COUNT(*) AS cancellation_rate FROM fact_flights WHERE Marketing_Airline_Network = 'Delta' AND flight_date BETWEEN '2026-01-01' AND '2026-06-30'
+
+EXPECTED RESULT:
+ year  cancellation_rate_pct
+ 2025                   1.22
+ 2026                   2.35
+
+ACTUAL RESULT:
+ period  cancellation_rate
+2025 H1                NaN
+2026 H1                NaN
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 2025.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 1.22)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 2026.0)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 2.35)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT '2025 H1' AS period, 100.0 * SUM(CASE WHEN is_cancelled THEN 1 ELSE 0 END) / COUNT(*) AS cancellation_rate FROM fact_flights WHERE Marketing_Airline_Network = 'Delta' AND flight_date BETWEEN '2025-01-01' AND '2025-06-30' UNION ALL SELECT '2026 H1' AS period, 100.0 * SUM(CASE WHEN is_cancelled THEN 1 ELSE 0 END) / COUNT(*) AS cancellation_rate FROM fact_flights WHERE Marketing_Airline_Network = 'Delta' AND flight_date BETWEEN '2026-01-01' AND '2026-06-30'
+
+Model explanation:
+Calculates Delta's cancellation rate for 2025 H1 and 2026 H1 using fact_flights with date filtering and is_cancelled flag
+
+Assumptions:
+  - Marketing_Airline_Network accurately identifies Delta-marketed flights
+  - flight_date correctly represents scheduled flight dates
+  - is_cancelled flag properly indicates cancelled flights
+
+Business semantic validation: PASS
+SQL safety validation: PASS

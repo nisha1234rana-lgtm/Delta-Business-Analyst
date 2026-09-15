@@ -1,0 +1,51 @@
+BENCHMARK ID: SQL007
+
+QUESTION:
+Compare Delta's cancellation rate in 2024 and 2025.
+
+GENERATED SQL:
+SELECT year, ROUND(100.0 * SUM(is_cancelled) / COUNT(*) OVER (PARTITION BY year), 2) AS cancellation_rate_pct FROM fact_flights WHERE year IN (2024, 2025) GROUP BY year
+
+EXPECTED RESULT:
+ year  cancellation_rate_pct
+ 2024                   1.09
+ 2025                   1.36
+
+ACTUAL RESULT:
+ year  cancellation_rate_pct
+ 2024              1682200.0
+ 2025              2220700.0
+
+MISSING EXPECTED VALUES:
+[
+  {
+    "value": "('number', 1.09)",
+    "expected_count": 1,
+    "actual_count": 0
+  },
+  {
+    "value": "('number', 1.36)",
+    "expected_count": 1,
+    "actual_count": 0
+  }
+]
+
+CAPTURED AGENT OUTPUT:
+
+================================================================================
+SQL GENERATION ATTEMPT 1/3
+================================================================================
+
+Generated SQL:
+SELECT year, ROUND(100.0 * SUM(is_cancelled) / COUNT(*) OVER (PARTITION BY year), 2) AS cancellation_rate_pct FROM fact_flights WHERE year IN (2024, 2025) GROUP BY year
+
+Model explanation:
+Calculates Delta's annual cancellation rates for 2024 and 2025 using fact_flights data, using is_cancelled flag and total scheduled flights per year
+
+Assumptions:
+  - The fact_flights table contains complete Delta-marketed flight data for 2024 and 2025
+  - The year column in fact_flights represents the calendar year of the flight
+  - The is_cancelled column accurately reflects cancelled flights
+
+Business semantic validation: PASS
+SQL safety validation: PASS
